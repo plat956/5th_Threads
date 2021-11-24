@@ -3,7 +3,7 @@ package by.latushko.training.entity;
 import java.util.*;
 
 public class Restaurant {
-    private static final int MAX_NUMBER_OF_CASH_BOXES = 1; //todo тестим на одной
+    private static final int MAX_NUMBER_OF_CASH_BOXES = 2; //todo тестим на одной
     List<CashBox> cashBoxes = new ArrayList<>(MAX_NUMBER_OF_CASH_BOXES);
 
     private Restaurant() {
@@ -21,7 +21,9 @@ public class Restaurant {
     }
 
     public void goInsideToEat(Customer customer) {
-        CashBox bestCashBox = cashBoxes.stream().min(Comparator.comparingInt(CashBox::queueSize)).get();
+        //CashBox bestCashBox = cashBoxes.stream().min(Comparator.comparingInt(CashBox::queueSize)).get();
+        CashBox bestCashBox = cashBoxes.get(new Random().nextInt(0, cashBoxes.size()));
         bestCashBox.takeTheQueue(customer);
+        bestCashBox.serve();
     }
 }

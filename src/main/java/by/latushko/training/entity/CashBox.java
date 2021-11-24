@@ -10,47 +10,52 @@ import java.util.concurrent.locks.ReentrantLock;
 public class CashBox {
     private int number;
     private Queue<Customer> queue = new ArrayDeque<>();
-    private Lock orderLock = new ReentrantLock();
+    private Lock queueLock = new ReentrantLock();
+    private Lock cashBoxLock = new ReentrantLock();
 
     public CashBox(int number) {
         this.number = number;
     }
 
-    public void takeTheQueue(Customer customer) {
-        randomTimeout();
-
-        queue.offer(customer);
-
-        //todo отладочный мусор
-        String list = "";
-        for(Customer c: queue) list += c.getCustomerName() + " -> ";
-        System.out.println(customer.getCustomerName() + " встал в очередь. *** " + list);
-
-
+    public void serve() {
         try {
-            orderLock.lock();
-            randomTimeout();
+            cashBoxLock.lock();
+            try {
+                TimeUnit.SECONDS.sleep(new Random().nextInt(5, 6));
+            } catch (InterruptedException e) {
+            }
 
-            Customer с = queue.poll();
+            Customer customer = queue.poll();
 
-            Order order = new Order(с);
-
-            System.out.println(с.getCustomerName() + " сделал заказ и покинул очередь");
-
+            //todo отладочный мусор
+            String list = "";
+            for(Customer c: queue) list += c.getCustomerName() + " -> ";
+            System.out.println("Касса №" + number + ": " + customer.getCustomerName() + " сделал заказ и покинул очередь. *** " + list);
         } finally {
-            orderLock.unlock();
+            cashBoxLock.unlock();
         }
+    }
 
+    public void takeTheQueue(Customer customer) {
+        try {
+            queueLock.lock();
+            try {
+                TimeUnit.SECONDS.sleep(new Random().nextInt(1, 3));
+            } catch (InterruptedException e) {
+            }
+
+            queue.offer(customer);
+
+            //todo отладочный мусор
+            String list = "";
+            for(Customer c: queue) list += c.getCustomerName() + " -> ";
+            System.out.println("Касса №" + number + ": " + customer.getCustomerName() + " встал в очередь. *** " + list);
+        } finally {
+            queueLock.unlock();
+        }
     }
 
     public int queueSize() {
         return queue.size();
-    }
-
-    private void randomTimeout() {
-        try {
-            TimeUnit.SECONDS.sleep(new Random().nextInt(2, 5));
-        } catch (InterruptedException e) {
-        }
     }
 }
