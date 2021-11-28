@@ -58,6 +58,11 @@ public class CashBox {
     }
 
     public int queueSize() {
-        return queue.size();
+        try {
+            queueLock.lock();
+            return queue.size();
+        } finally {
+            queueLock.unlock();
+        }
     }
 }

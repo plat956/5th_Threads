@@ -6,8 +6,9 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class Restaurant {
-    private static final int MAX_NUMBER_OF_CASH_BOXES = 1; //todo тестим на одной
+    private static final int MAX_NUMBER_OF_CASH_BOXES = 2; //todo тестим на одной
     List<CashBox> cashBoxes = new ArrayList<>(MAX_NUMBER_OF_CASH_BOXES);
+    Lock cashBoxesLock = new ReentrantLock();
     List<Order> orderStock = new ArrayList<>();
     Lock stockLock = new ReentrantLock();
 
@@ -31,8 +32,14 @@ public class Restaurant {
             order = new Order(customer);
             System.out.println("Предзаказ: Клиент " + customer.getCustomerName() + " ожидает выдачи по № заказа " + order.getNumber());
         } else {
-            //CashBox bestCashBox = cashBoxes.stream().min(Comparator.comparingInt(CashBox::queueSize)).get();
-            CashBox bestCashBox = cashBoxes.get(new Random().nextInt(0, cashBoxes.size()));
+            CashBox bestCashBox;
+            try {
+                cashBoxesLock.lock();
+                bestCashBox = cashBoxes.stream().min(Comparator.comparingInt(CashBox::queueSize)).get();
+            } finally {
+                cashBoxesLock.unlock();
+            }
+            //CashBox bestCashBox = cashBoxes.get(new Random().nextInt(0, cashBoxes.size()));
             bestCashBox.takeTheQueue(customer);
             order = bestCashBox.serve();
         }
@@ -43,8 +50,10 @@ public class Restaurant {
             Boolean res = result.get();
 
             if (res) {
+                stockLock.lock();
                 Order o = orderStock.stream().filter(t -> t.getNumber() == order.getNumber()).findAny().orElse(null);
                 System.out.println("Клиент " + o.getCustomer().getCustomerName() + " забрал заказ №" + o.getNumber());
+                stockLock.unlock();
             } else {
                 System.out.println("err");
             }

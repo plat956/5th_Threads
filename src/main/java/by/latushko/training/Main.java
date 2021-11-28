@@ -11,7 +11,7 @@ import java.util.concurrent.Executors;
 public class Main {
     public static void main(String[] args) {
         List<Customer> customers = new ArrayList<>();
-        for (int i = 0; i < 3; i++) {
+        for (int i = 0; i < 100; i++) {
             Customer customer = new Customer(new Random().nextBoolean());
             customers.add(customer);
         }
