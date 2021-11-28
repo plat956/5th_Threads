@@ -1,12 +1,14 @@
 package by.latushko.training.util;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 public class OrderNumberGenerator {
-    private static int number;
+    private static AtomicInteger number = new AtomicInteger(0);
 
     private OrderNumberGenerator() {
     }
 
     public static int generateNumber() {
-        return ++number;
+        return number.incrementAndGet();
     }
 }
