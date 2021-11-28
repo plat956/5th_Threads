@@ -1,9 +1,7 @@
 package by.latushko.training.entity;
 
-import java.util.ArrayDeque;
-import java.util.Queue;
-import java.util.Random;
-import java.util.concurrent.TimeUnit;
+import java.util.*;
+import java.util.concurrent.*;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -17,7 +15,7 @@ public class CashBox {
         this.number = number;
     }
 
-    public void serve() {
+    public Order serve() {
         try {
             cashBoxLock.lock();
             try {
@@ -27,10 +25,14 @@ public class CashBox {
 
             Customer customer = queue.poll();
 
+            Order order = new Order(customer);
+
             //todo отладочный мусор
             String list = "";
             for(Customer c: queue) list += c.getCustomerName() + " -> ";
-            System.out.println("Касса №" + number + ": " + customer.getCustomerName() + " сделал заказ и покинул очередь. *** " + list);
+            System.out.println("Касса №" + number + ": " + customer.getCustomerName() + " сделал заказ и покинул очередь с заказом №" + order.getNumber() + ". *** " + list);
+
+            return order;
         } finally {
             cashBoxLock.unlock();
         }
