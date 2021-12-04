@@ -7,7 +7,6 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.stream.Collectors;
 
 public class CashBox {
     private static final Logger logger = LogManager.getLogger();
@@ -21,21 +20,20 @@ public class CashBox {
     }
 
     public Order serve() {
+        Customer customer;
+        try {
+            queueLock.lock();
+            customer = queue.poll();
+        } finally {
+            queueLock.unlock();
+        }
+
         try {
             cashBoxLock.lock();
-
-            try {
-                TimeUnit.SECONDS.sleep(new Random().nextInt(5, 6));
-            } catch (InterruptedException e) {
-                logger.error(e.getMessage());
-            }
-
-            Customer customer = queue.poll();
-
+            doTimeout(3, 4);
             Order order = new Order(customer);
-
-            System.out.println("Касса №" + number + ": " + customer.getCustomerName() + " сделал заказ и покинул очередь с заказом №" + order.getNumber() + ". *** " + queue.stream().map(Customer::getCustomerName).collect(Collectors.joining(" -> ")));
-
+            logger.info("Касса №{}: {} сделал заказ и покинул очередь с заказом №{}",
+                    number, customer.getCustomerName(), order.getNumber());
             return order;
         } finally {
             cashBoxLock.unlock();
@@ -45,27 +43,19 @@ public class CashBox {
     public void takeTheQueue(Customer customer) {
         try {
             queueLock.lock();
-
-            try {
-                TimeUnit.SECONDS.sleep(new Random().nextInt(1, 3));
-            } catch (InterruptedException e) {
-                logger.error(e.getMessage());
-            }
-
+            doTimeout(1, 3);
             queue.offer(customer);
-
-            System.out.println("Касса №" + number + ": " + customer.getCustomerName() + " встал в очередь. *** " + queue.stream().map(Customer::getCustomerName).collect(Collectors.joining(" -> ")));
+            logger.info("Касса №{}: {} занял очередь", number, customer.getCustomerName());
         } finally {
             queueLock.unlock();
         }
     }
 
-    public int queueSize() {
+    private void doTimeout(int from, int to) {
         try {
-            queueLock.lock();
-            return queue.size();
-        } finally {
-            queueLock.unlock();
+            TimeUnit.SECONDS.sleep(new Random().nextInt(from, to));
+        } catch (InterruptedException e) {
+            logger.error(e.getMessage());
         }
     }
 }

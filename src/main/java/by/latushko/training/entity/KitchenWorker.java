@@ -3,7 +3,7 @@ package by.latushko.training.entity;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
@@ -12,15 +12,15 @@ import java.util.concurrent.locks.Lock;
 public class KitchenWorker extends Thread {
     private static final Logger logger = LogManager.getLogger();
     private Order order;
-    private List<Order> outputStock;
+    private Map<Integer, Order> orderStock;
     private Lock stockLock;
-    private Condition stokLockCondition;
+    private Condition stockLockCondition;
 
-    public KitchenWorker(Order order, List<Order> outputStock, Lock stockLock, Condition condition) {
+    public KitchenWorker(Order order, Map<Integer, Order> orderStock, Lock stockLock, Condition stockLockCondition) {
         this.order = order;
-        this.outputStock = outputStock;
+        this.orderStock = orderStock;
         this.stockLock = stockLock;
-        this.stokLockCondition = condition;
+        this.stockLockCondition = stockLockCondition;
     }
 
     @Override
@@ -35,9 +35,9 @@ public class KitchenWorker extends Thread {
 
         try {
             stockLock.lock();
-            outputStock.add(order);
-            System.out.println("Заказ №" + order.getNumber() + " готов к выдаче");
-            stokLockCondition.signalAll();
+            orderStock.put(order.getNumber(), order);
+            logger.info("Заказ №{} готов к выдаче на стоке", order.getNumber());
+            stockLockCondition.signalAll();
         } finally {
             stockLock.unlock();
         }

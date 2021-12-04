@@ -40,4 +40,34 @@ public class Order {
     public void setStatus(Status status) {
         this.status = status;
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        Order order = (Order) o;
+
+        if (number != order.number) return false;
+        if (customer != null ? !customer.equals(order.customer) : order.customer != null) return false;
+        return status == order.status;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = number;
+        result = 31 * result + (customer != null ? customer.hashCode() : 0);
+        result = 31 * result + (status != null ? status.hashCode() : 0);
+        return result;
+    }
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("Order{");
+        sb.append("number=").append(number);
+        sb.append(", customer=").append(customer);
+        sb.append(", status=").append(status);
+        sb.append('}');
+        return sb.toString();
+    }
 }
