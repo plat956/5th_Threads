@@ -4,8 +4,8 @@ public class Customer extends Thread{
     private String customerName;
     private boolean hasPreorder;
 
-    public Customer(boolean hasPreorder) {
-        this.customerName = "Customer_" + getId();
+    public Customer(String name, boolean hasPreorder) {
+        this.customerName = name;
         this.hasPreorder = hasPreorder;
     }
 

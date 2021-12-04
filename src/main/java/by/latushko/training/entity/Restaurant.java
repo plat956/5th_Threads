@@ -1,5 +1,11 @@
 package by.latushko.training.entity;
 
+import by.latushko.training.exception.InputDataParseException;
+import by.latushko.training.exception.InputFileReadException;
+import by.latushko.training.parser.CustomDataParser;
+import by.latushko.training.parser.impl.CustomDataParserImpl;
+import by.latushko.training.reader.CustomDataReader;
+import by.latushko.training.reader.impl.CustomDataReaderImpl;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -11,19 +17,31 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public class Restaurant {
     private static final Logger logger = LogManager.getLogger();
-    private static final int MAX_NUMBER_OF_CASH_BOXES = 3;
-    private List<CashBox> cashBoxes = new ArrayList<>(MAX_NUMBER_OF_CASH_BOXES);
+    private static final String CASH_BOXES_DATA_FILE = "data/cashboxes.txt";
+    private static Restaurant instance;
+    private static AtomicBoolean creator = new AtomicBoolean(false);
+    private static ReentrantLock lockerSingleton = new ReentrantLock();
+    private List<CashBox> cashBoxes;
     private Map<Integer, Order> orderStock = new HashMap<>();
     private Lock cashBoxesLock = new ReentrantLock();
     private Lock stockLock = new ReentrantLock();
     private Condition stockLockCondition = stockLock.newCondition();
-    private static Restaurant instance;
-    private static AtomicBoolean creator = new AtomicBoolean(false);
-    private static ReentrantLock lockerSingleton = new ReentrantLock();
-
 
     private Restaurant() {
-        for (int i = 0; i < MAX_NUMBER_OF_CASH_BOXES; i++) {
+        CustomDataReader reader = new CustomDataReaderImpl();
+        CustomDataParser parser = new CustomDataParserImpl();
+        int cashBoxesCount = 0;
+
+        String cashBoxesCountUnparsed;
+        try {
+            cashBoxesCountUnparsed = reader.read(CASH_BOXES_DATA_FILE);
+            cashBoxesCount = parser.parseCashBoxesCount(cashBoxesCountUnparsed);
+        } catch (InputFileReadException | InputDataParseException e) {
+            logger.error(e.getMessage());
+        }
+
+        cashBoxes = new ArrayList<>(cashBoxesCount);
+        for (int i = 0; i < cashBoxesCount; i++) {
             cashBoxes.add(new CashBox(i + 1));
         }
     }
