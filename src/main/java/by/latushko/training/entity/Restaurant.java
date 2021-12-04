@@ -4,17 +4,18 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class Restaurant {
     private static final Logger logger = LogManager.getLogger();
-    private static final int MAX_NUMBER_OF_CASH_BOXES = 2;
+    private static final int MAX_NUMBER_OF_CASH_BOXES = 3;
     private List<CashBox> cashBoxes = new ArrayList<>(MAX_NUMBER_OF_CASH_BOXES);
     private List<Order> orderStock = new ArrayList<>();
     private Lock cashBoxesLock = new ReentrantLock();
     private Lock stockLock = new ReentrantLock();
+    private Condition stockLockCondition = stockLock.newCondition();
 
     private Restaurant() {
         for (int i = 0; i < MAX_NUMBER_OF_CASH_BOXES; i++) {
@@ -39,7 +40,7 @@ public class Restaurant {
             CashBox bestCashBox;
             try {
                 cashBoxesLock.lock();
-                bestCashBox = cashBoxes.stream().min(Comparator.comparingInt(CashBox::queueSize)).get();
+                bestCashBox = cashBoxes.stream().min(Comparator.comparingInt(CashBox::queueSize)).get(); //почтовые марки
             } finally {
                 cashBoxesLock.unlock();
             }
@@ -47,20 +48,22 @@ public class Restaurant {
             order = bestCashBox.serve();
         }
 
-        ExecutorService executor = Executors.newSingleThreadExecutor();
-        Future<Boolean> result = executor.submit(new KitchenWorker(order, orderStock, stockLock));
-        try {
-            result.get();
+        KitchenWorker worker = new KitchenWorker(order, orderStock, stockLock, stockLockCondition);
+        worker.start();
 
-            try {
-                stockLock.lock();
-                Order o = orderStock.stream().filter(t -> t.getNumber() == order.getNumber()).findAny().orElse(null);
-                System.out.println("Клиент " + o.getCustomer().getCustomerName() + " забрал заказ №" + o.getNumber());
-            } finally {
-                stockLock.unlock();
+        try {
+            stockLock.lock();
+            Order o = orderStock.stream().filter(t -> t.getNumber() == order.getNumber()).findAny().orElse(null);
+            while(o == null) {
+                stockLockCondition.await();
+                o = orderStock.stream().filter(t -> t.getNumber() == order.getNumber()).findAny().orElse(null);
             }
-        } catch (InterruptedException | ExecutionException e) {
+
+            System.out.println("Клиент " + o.getCustomer().getCustomerName() + " забрал заказ №" + o.getNumber());
+        } catch (InterruptedException e) {
             logger.error(e.getMessage());
+        } finally {
+            stockLock.unlock();
         }
     }
 }
